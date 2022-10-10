@@ -1,1 +1,0 @@
-gz topic -e /gazebo/default/my_velodyne/velodyne_hdl-32/top/sensor/scan -d 2 > data_example.json
