@@ -1,5 +1,0 @@
-/home/miguel/Universidade/Tese/gazebo_world/build/CMakeFiles/rebuild_cache.dir
-/home/miguel/Universidade/Tese/gazebo_world/build/CMakeFiles/edit_cache.dir
-/home/miguel/Universidade/Tese/gazebo_world/build/CMakeFiles/vel_data.dir
-/home/miguel/Universidade/Tese/gazebo_world/build/CMakeFiles/vel.dir
-/home/miguel/Universidade/Tese/gazebo_world/build/CMakeFiles/velodyne_plugin.dir
