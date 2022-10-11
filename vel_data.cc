@@ -12,23 +12,30 @@
 #include <gazebo/gazebo_client.hh>
 #endif
 
-void cb(ConstWorldStatisticsPtr &_msg)
-{
-    // std::cout << _msg->DebugString();
-    std::ofstream o;
-    o.open("../data.txt"); //open is the method of ofstream
-    o << _msg->DebugString(); // << operator which is used to print the file informations in the screen
-    o.close();
-}
 
-// void cb(std::string &_msg)
+//gazebo.msgs.LaserScanStamped
+
+// void cb(ConstWorldStatisticsPtr &_msg)
 // {
 //     // std::cout << _msg->DebugString();
 //     std::ofstream o;
-//     o.open("../data.txt"); //open is the method of ofstream
-//     o << _msg; // << operator which is used to print the file informations in the screen
+//     o.open("../sensor_data/data.txt"); //open is the method of ofstream
+//     o << _msg->DebugString(); // << operator which is used to print the file informations in the screen
 //     o.close();
 // }
+
+// std::string text = "";
+
+void cb(ConstLaserScanStampedPtr &_msg)
+{
+    // std::cout << _msg->DebugString();
+    gazebo::msgs::LaserScan scan = _msg->scan();
+    std::ofstream o;
+    o.open("../sensor_data/data.txt"); //open is the method of ofstream
+    o << scan.DebugString(); // << operator which is used to print the file informations in the screen
+    // text = text + "\n" + std::to_string(scan.count());
+    o.close();
+}
 
 /////////////////////////////////////////////////
 int main(int _argc, char **_argv)
@@ -44,8 +51,12 @@ int main(int _argc, char **_argv)
     gazebo::transport::NodePtr node(new gazebo::transport::Node());
     node->Init();
     
+    // std::ofstream o;
+    // o.open("../sensor_data/data.txt"); //open is the method of ofstream
     // Publish to the  velodyne topic
-    gazebo::transport::SubscriberPtr sub = node->Subscribe("~/my_velodyne/velodyne_hdl-32/top/sensor/scan", cb);
+    gazebo::transport::SubscriberPtr sub = node->Subscribe("/gazebo/default/my_velodyne/velodyne_hdl-32/top/sensor/scan", cb);
+    // o << text;
+    // o.close();
 
     while (true)
         gazebo::common::Time::MSleep(10);
