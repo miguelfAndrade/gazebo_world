@@ -15,26 +15,18 @@
 
 //gazebo.msgs.LaserScanStamped
 
-// void cb(ConstWorldStatisticsPtr &_msg)
-// {
-//     // std::cout << _msg->DebugString();
-//     std::ofstream o;
-//     o.open("../sensor_data/data.txt"); //open is the method of ofstream
-//     o << _msg->DebugString(); // << operator which is used to print the file informations in the screen
-//     o.close();
-// }
-
-// std::string text = "";
-
 void cb(ConstLaserScanStampedPtr &_msg)
 {
-    // std::cout << _msg->DebugString();
     gazebo::msgs::LaserScan scan = _msg->scan();
-    std::ofstream o;
-    o.open("../sensor_data/data.txt"); //open is the method of ofstream
-    o << scan.DebugString(); // << operator which is used to print the file informations in the screen
+    gazebo::msgs::Pose world_data = scan.world_pose();
+    gazebo::msgs::Vector3d position = world_data.position();
+    gazebo::msgs::Quaternion orientation = world_data.orientation();
+    std::ofstream file;
+    file.open("../sensor_data/data.xml", std::fstream::app); //open is the method of ofstream
+    file << "\n"; // << operator which is used to print the file informations in the screen
+    file << scan.DebugString();
     // text = text + "\n" + std::to_string(scan.count());
-    o.close();
+    file.close();
 }
 
 /////////////////////////////////////////////////
