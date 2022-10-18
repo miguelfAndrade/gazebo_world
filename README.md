@@ -6,4 +6,5 @@ World for gazebo robot simulator, which contains a lidar sensor that rotates at 
 - Install the development package `sudo apt install libgazebo8-dev`
 - Create a new directory in the root of the project named **build** by running the command `mkdir build`
 - Inside the **build** directory run `cmake ..` `make`
-- Finally run the script **vel.sh** in the root of the project
+- Run the command `./vel.sh` in the root of the project
+- Open a new terminal and run the command `./vel_data` inside the **build** directory
