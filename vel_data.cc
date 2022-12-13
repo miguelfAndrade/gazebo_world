@@ -22,7 +22,16 @@ using namespace std;
 #define PI 3.14159265
 #define N 3
 
+struct Quaternion {
+    double w, x, y, z;
+};
+
+struct EulerAngles {
+    double roll, pitch, yaw;
+};
+
 void multiplyVector(double mat1[][N], double mat2[N], double res[N]);
+EulerAngles ToEulerAngles(Quaternion q);
 
 string body_tags = ""; //all repeated tags are added in this global string variable
 string points_coordinates = "";
@@ -75,7 +84,7 @@ void cb(ConstLaserScanStampedPtr &_msg)
     string intensities_tags = "";
 
 
-    double min_angle = 0;
+    double min_angle = scan.angle_min();
     double step_angle = scan.angle_step();
 
     double q0 = orientation.w();
@@ -92,15 +101,16 @@ void cb(ConstLaserScanStampedPtr &_msg)
     double m31 = 2*((q1*q3) - (q0*q2));
     double m32 = 2*((q2*q3) + (q0*q1));
     double m33 = 2*((q0*q0) + (q3*q3))-1;
+    
 
-    if(scan.angle_min() < 0)
-    {
-        min_angle = (PI/2) + abs(scan.angle_min());
-    }
-    else
-    {
-        min_angle = (PI/2) - scan.angle_min();
-    }
+    // if(scan.angle_min() < 0)
+    // {
+    //     min_angle = (PI/2) + abs(scan.angle_min());
+    // }
+    // else
+    // {
+    //     min_angle = (PI/2) - scan.angle_min();
+    // }
 
     double R[N][N] = { { m11, m12, m13 },
                        { m21, m22, m23 },
@@ -129,31 +139,56 @@ void cb(ConstLaserScanStampedPtr &_msg)
     //    longitude  = atan2( tx, tz );
     // if ( longitude < 0 )
     //   longitude += 360.0;
+    double angle = 0;
 
     while(i<ray_total_count)
     {
         ranges_tags += "\t\t<ranges>" + to_string(scan.ranges(i)) + "</ranges>\n";
         intensities_tags += "\t\t<intensities>" + to_string(scan.intensities(i)) + "</intensities>\n";
 
-        double x1 = scan.ranges(i)*sin(min_angle)*cos(0);
-        double y1 = scan.ranges(i)*sin(min_angle)*sin(0);
-        double z1 = scan.ranges(i)*cos(min_angle);
+        // double x1 = scan.ranges(i)*sin(min_angle)*cos(0);
+        // double y1 = scan.ranges(i)*sin(min_angle)*sin(0);
+        // double z1 = scan.ranges(i)*cos(min_angle);
+
+        double x1 = scan.ranges(i)*cos(min_angle);
+        double y1 = 0;
+        double z1 = scan.ranges(i)*sin(min_angle);
 
         double v[N]={x1,y1,z1};
 
         double res[N];
 
-        multiplyVector(R, v, res);
 
-        double x = res[0] + position.x();
-        double y = res[1] + position.y();
-        double z = res[2] + position.z();
+        Quaternion qq;
+        qq.w = orientation.w();
+        qq.x = orientation.x();
+        qq.y = orientation.y();
+        qq.z = orientation.z();
         
-        points_coordinates += to_string(x) + " " + to_string(y) + " " + to_string(z) + "\n";
-        min_angle -= step_angle;
+        EulerAngles z_angle = ToEulerAngles(qq);
+
+        double RZ[N][N] = { { cos(angle), -sin(angle), 0 },
+                            { sin(angle), cos(angle), 0 },
+                            { 0, 0, 1 }};
+
+        multiplyVector(RZ, v, res);
+
+        // double x = res[0] + position.x();
+        // double y = res[1] + position.y();
+        // double z = res[2] + position.z();
+
+        double x = position.x();
+        double y = position.y();
+        double z = position.z();
+        
+        points_coordinates += to_string(x) + "\t" + to_string(y) + "\t" + to_string(z) + "\n";
+        min_angle += step_angle;
+        cout << "X: " + to_string(x1) + ";   Y: " + to_string(y1) + ";   Z: " + to_string(z1) + "; \n";
 
         i += 1;
     }
+    
+    angle += step_angle;
 
     string point_tag = "\t<point>\n" + world_pose_tag + angle_max_min_tags + ranges_tags + intensities_tags + "\t</point>\n";
     
@@ -170,6 +205,15 @@ void cb(ConstLaserScanStampedPtr &_msg)
     pointCloud.open("../sensor_data/sensor_data.xyz"); //open is the method of ofstream
     pointCloud << points_coordinates;
     pointCloud.close();
+
+    Quaternion q;
+    q.w = orientation.w();
+    q.x = orientation.x();
+    q.y = orientation.y();
+    q.z = orientation.z();
+    EulerAngles angles = ToEulerAngles(q);
+
+    // cout << "Roll: " + to_string(angles.roll) + "; Pitch: " + to_string(angles.pitch) + "; Yaw: " + to_string(angles.yaw) + "; \n";
 
 }
 
@@ -194,6 +238,29 @@ void multiplyVector(double mat1[][N], double mat2[N], double res[N])
             res[i]+=(mat1[i][j]*mat2[j]);
         }
     }
+}
+
+EulerAngles ToEulerAngles(Quaternion q) {
+    EulerAngles angles;
+
+    // roll (x-axis rotation)
+    double sinr_cosp = 2 * (q.w * q.x + q.y * q.z);
+    double cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
+    angles.roll = std::atan2(sinr_cosp, cosr_cosp);
+
+    // pitch (y-axis rotation)
+    double sinp = 2 * (q.w * q.y - q.z * q.x);
+    if (std::abs(sinp) >= 1)
+        angles.pitch = std::copysign(M_PI / 2, sinp); // use 90 degrees if out of range
+    else
+        angles.pitch = std::asin(sinp);
+
+    // yaw (z-axis rotation)
+    double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+    double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+    angles.yaw = std::atan2(siny_cosp, cosy_cosp);
+
+    return angles;
 }
 
 /////////////////////////////////////////////////
